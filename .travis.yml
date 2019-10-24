@@ -34,7 +34,7 @@ install:
   - if [ $TRAVIS_OS_NAME = osx ]; then pip install six; fi
 
 before_script:
-  - export PATH=$HOME/.cargo/bin:$PATH
+  - export PATH=/usr/bin/:$HOME/.cargo/bin:$PATH
 
 script:
   - if [[ $TRAVIS_RUST_VERSION == "stable" ]]; then cargo fmt -- --check; fi
