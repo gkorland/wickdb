@@ -14,10 +14,13 @@ rust:
 addons:
   apt:
     packages:
-      - libssl-dev
-      - zlib1g-dev
-      - pkg-config
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
       - cmake
+      - gcc
+      - binutils-dev
+      - libiberty-dev
 
 matrix:
   allow_failures:
@@ -30,10 +33,6 @@ install:
 
 before_script:
   - export PATH=$HOME/.cargo/bin:$PATH
-  - cargo install cargo-tarpaulin -f
-  # - cargo install cargo-update || echo "cargo-update already installed"
-  # - cargo install cargo-travis || echo "cargo-travis already installed"
-  # - cargo install-update -a # update outdated cached binaries
 
 script:
   - if [[ $TRAVIS_RUST_VERSION == "stable" ]]; then cargo fmt -- --check; fi
@@ -42,8 +41,19 @@ script:
   - cargo test --verbose --all
 
 after_success:
-  # measure code coverage and upload to coveralls.io
-  - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+  - wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
+  - tar xzf master.tar.gz
+  - cd kcov-master
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - make install DESTDIR=../../kcov-build
+  - cd ../..
+  - rm -rf kcov-master
+  - for file in target/debug/examplerust-*; do [ -x "${file}" ] || continue; mkdir -p "target/cov/$(basename $file)"; ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done
+  - bash <(curl -s https://codecov.io/bash)
+  - echo "Uploaded code coverage"
 env:
   global:
     - RUST_BACKTRACE=1
